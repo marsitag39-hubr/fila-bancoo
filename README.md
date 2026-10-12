@@ -21,6 +21,12 @@ El repositorio incluye un `Dockerfile` y `render.yaml` para desplegar el fronten
 
 La configuración inicial usa el plan gratuito para que puedas probarlo sin configurar servicios adicionales. Ese plan apaga el servicio cuando no recibe actividad y su disco es temporal; por eso los turnos pueden borrarse al reiniciar o volver a desplegar. Para usarlo durante una operación real, cambia el servicio a un plan compatible con disco persistente, monta el disco en `/var/data` y establece `TURNOS_DB_PATH=/var/data/turnos.db` en Render. Render documenta las limitaciones del plan gratuito en https://render.com/docs/free y el almacenamiento persistente en https://render.com/docs/disks.
 
+## Publicar la interfaz en Vercel
+
+El frontend Angular puede desplegarse en Vercel desde la carpeta `frontend` del repositorio. La configuración de `frontend/vercel.json` indica la carpeta de salida y mantiene disponible la pantalla `/display`. Al importar el repositorio `marsitag39-hubr/fila-bancoo`, selecciona `frontend` como **Root Directory**.
+
+La interfaz alojada en Vercel usa la API Python y WebSocket que siguen alojados en Render (`https://sistema-turnos-atencion-vv9q.onrender.com`). Así se mantiene la fila compartida y sincronizada entre las pantallas. El almacenamiento de turnos sigue dependiendo del disco de Render y conserva las limitaciones descritas arriba.
+
 ## Inicio manual
 
 Abre una terminal en `turnos-app` y prepara los paquetes una vez:
@@ -72,3 +78,4 @@ git push -u origin main
 ```
 
 No subas `backend/turnos.db`: contiene datos locales de la jornada.
+
