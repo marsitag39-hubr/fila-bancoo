@@ -83,7 +83,18 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Sistema de Turnos", version="1.0.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:4200", "http://127.0.0.1:4200"], allow_origin_regex=r"https://fila-bancoo(?:-[a-z0-9-]+)*\.vercel\.app", allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "https://fila-bancoo.vercel.app",
+    ],
+    allow_origin_regex=r"https://fila-bancoo(?:-[a-z0-9-]+)*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class NewTicket(BaseModel):
