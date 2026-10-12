@@ -18,17 +18,19 @@ interface State { tables: Station[]; queue: Ticket[]; current: Station | null; n
 `, styleUrl: './app.component.css' })
 export class AppComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient); private socket?: WebSocket; private timer?: number; private heartbeat?: number;
+  private readonly apiBase = ['localhost', '127.0.0.1'].includes(location.hostname) ? '' : 'https://sistema-turnos-atencion-vv9q.onrender.com';
   state: State = { tables: [1,2,3,4].map(id => ({id,ticket:null})), queue: [], current:null, next_number:1 };
   name=''; sound=true; receipt: {id:number; name:string; status:string; table_id:number|null}|null=null; today=new Date();
   isDisplay = location.pathname === '/display';
   get occupied(): number { return this.state.tables.filter(t => !!t.ticket).length; }
-  ngOnInit(): void { this.http.get<State>('/api/state').subscribe(s => this.state=s); this.connect(); }
+  ngOnInit(): void { this.http.get<State>(`${this.apiBase}/api/state`).subscribe(s => this.state=s); this.connect(); }
   ngOnDestroy(): void { this.socket?.close(); if(this.timer) window.clearTimeout(this.timer); if(this.heartbeat) window.clearInterval(this.heartbeat); }
-  connect(): void { const protocol=location.protocol==='https:'?'wss':'ws'; this.socket=new WebSocket(`${protocol}://${location.host}/ws`); this.socket.onopen=()=>{if(this.heartbeat) window.clearInterval(this.heartbeat);this.heartbeat=window.setInterval(()=>{if(this.socket?.readyState===WebSocket.OPEN)this.socket.send('ping');},30000);}; this.socket.onmessage=e=>this.state=JSON.parse(e.data) as State; this.socket.onclose=()=>{if(this.heartbeat)window.clearInterval(this.heartbeat);this.timer=window.setTimeout(()=>this.connect(),2000);}; }
+  connect(): void { const apiUrl=new URL(this.apiBase || location.origin); const protocol=apiUrl.protocol==='https:'?'wss':'ws'; this.socket=new WebSocket(`${protocol}://${apiUrl.host}/ws`); this.socket.onopen=()=>{if(this.heartbeat) window.clearInterval(this.heartbeat);this.heartbeat=window.setInterval(()=>{if(this.socket?.readyState===WebSocket.OPEN)this.socket.send('ping');},30000);}; this.socket.onmessage=e=>this.state=JSON.parse(e.data) as State; this.socket.onclose=()=>{if(this.heartbeat)window.clearInterval(this.heartbeat);this.timer=window.setTimeout(()=>this.connect(),2000);}; }
   fmt(n:number):string { return String(n).padStart(2,'0'); }
-  create(): void { this.http.post<typeof this.receipt>('/api/tickets',{name:this.name.trim()}).subscribe(r=>{this.receipt=r;this.name='';if(this.sound&&r?.status==='in_service')this.beep();}); }
-  finish(id:number): void { this.http.post<State>(`/api/tables/${id}/finish`,{}).subscribe(s=>this.state=s); }
-  reset(): void { if(confirm('¿Reiniciar la jornada? Se borrarán los turnos y la numeración empezará de nuevo.'))this.http.post<State>('/api/reset',{}).subscribe(s=>{this.state=s;this.receipt=null;}); }
+  create(): void { this.http.post<typeof this.receipt>(`${this.apiBase}/api/tickets`,{name:this.name.trim()}).subscribe(r=>{this.receipt=r;this.name='';if(this.sound&&r?.status==='in_service')this.beep();}); }
+  finish(id:number): void { this.http.post<State>(`${this.apiBase}/api/tables/${id}/finish`,{}).subscribe(s=>this.state=s); }
+  reset(): void { if(confirm('¿Reiniciar la jornada? Se borrarán los turnos y la numeración empezará de nuevo.'))this.http.post<State>(`${this.apiBase}/api/reset`,{}).subscribe(s=>{this.state=s;this.receipt=null;}); }
   fullscreen(): void { if(!document.fullscreenElement) void document.documentElement.requestFullscreen?.(); else void document.exitFullscreen?.(); }
   beep(): void { try { const c=new AudioContext(); [0,.17].forEach((t,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=i?880:660;g.gain.setValueAtTime(.001,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.13,c.currentTime+t+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+.13);o.start(c.currentTime+t);o.stop(c.currentTime+t+.14);});window.setTimeout(()=>void c.close(),600); } catch {} }
 }
+
